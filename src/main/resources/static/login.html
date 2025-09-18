@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;background:#f6f8fa;margin:0;padding:0}
+        .container{max-width:420px;margin:60px auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+        .header{padding:16px 20px;border-bottom:1px solid #eee;font-size:18px;font-weight:600}
+        .content{padding:20px}
+        label{display:block;margin:10px 0 6px;color:#374151}
+        input[type=text],input[type=password]{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px}
+        button{margin-top:14px;width:100%;padding:10px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer}
+        button:hover{background:#1d4ed8}
+        .tokens{margin-top:18px;background:#f3f4f6;padding:12px;border-radius:6px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+        .error{margin-top:10px;color:#b91c1c}
+        .row{display:flex;gap:8px}
+        .row > div{flex:1}
+        .link{margin:14px 0 0;text-align:center}
+        .link a{color:#2563eb;text-decoration:none}
+    </style>
+    <script>
+        async function registerUser(){
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            clearOutput();
+            const res = await fetch('/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+            const text = await res.text();
+            document.getElementById('error').textContent = res.ok ? 'Registered successfully' : text;
+        }
+        async function loginUser(){
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            clearOutput();
+            const res = await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+            if(!res.ok){
+                document.getElementById('error').textContent = 'Invalid credentials';
+                return;
+            }
+            const data = await res.json();
+            document.getElementById('access').textContent = data.accessToken;
+            document.getElementById('refresh').textContent = data.refreshToken;
+        }
+        async function refreshToken(){
+            const refresh = document.getElementById('refresh').textContent.trim();
+            if(!refresh){
+                document.getElementById('error').textContent = 'No refresh token available';
+                return;
+            }
+            const res = await fetch('/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:refresh})});
+            if(!res.ok){
+                document.getElementById('error').textContent = 'Invalid refresh token';
+                return;
+            }
+            const data = await res.json();
+            document.getElementById('access').textContent = data.accessToken;
+            document.getElementById('refresh').textContent = data.refreshToken;
+        }
+        function clearOutput(){
+            document.getElementById('error').textContent = '';
+        }
+    </script>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">JWT Login</div>
+        <div class="content">
+            <label for="username">Username</label>
+            <input id="username" type="text" placeholder="Enter username" />
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Enter password" />
+            <div class="row">
+                <div><button onclick="loginUser()">Login</button></div>
+                <div><button onclick="registerUser()" style="background:#059669">Register</button></div>
+            </div>
+            <button onclick="refreshToken()" style="background:#6b7280">Refresh Tokens</button>
+            <div id="error" class="error"></div>
+            <div class="tokens">
+                <div><strong>Access Token</strong></div>
+                <div id="access"></div>
+                <div style="margin-top:8px"><strong>Refresh Token</strong></div>
+                <div id="refresh"></div>
+            </div>
+            <div class="link">
+                <a href="/swagger-ui/index.html" target="_blank">Open Swagger UI</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
