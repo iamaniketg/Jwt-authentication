@@ -1,58 +1,46 @@
 package com.example.Jwt_Authentication.controller;
 
 import com.example.Jwt_Authentication.config.UserClient;
-import com.example.Jwt_Authentication.model.AppUser;
 import com.example.Jwt_Authentication.model.dtos.AuthRequest;
 import com.example.Jwt_Authentication.model.dtos.AuthResponse;
 import com.example.Jwt_Authentication.model.dtos.RefreshRequest;
 import com.example.Jwt_Authentication.model.dtos.UserDto;
-import com.example.Jwt_Authentication.repository.AppUserRepository;
 import com.example.Jwt_Authentication.service.JwtService;
 import com.example.Jwt_Authentication.service.TokenCacheService;
 import io.jsonwebtoken.JwtException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final AuthenticationManager authenticationManager;
     private final TokenCacheService tokenCacheService;
     private final UserClient userClient;
-    private final AppUserRepository appUserRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(AuthenticationManager authenticationManager, TokenCacheService tokenCacheService, UserClient userClient, AppUserRepository appUserRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
-        this.authenticationManager = authenticationManager;
+    public AuthController(TokenCacheService tokenCacheService, UserClient userClient, JwtService jwtService) {
         this.tokenCacheService = tokenCacheService;
         this.userClient = userClient;
-        this.appUserRepository = appUserRepository;
-        this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody AuthRequest request){
-        if(appUserRepository.findByUsername(request.email()).isPresent()){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("user exists");
-        }
-        AppUser user = new AppUser();
-        user.setUsername(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRoles("USER_ROLE");
-        appUserRepository.save(user);
-        return ResponseEntity.ok("Registered Successfully");
+        // Registration should be handled by User-service
+        // For now, we'll just redirect or handle it appropriately
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Registration should be handled by User-service");
     }
+    
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody AuthRequest request) {
         try {
+            log.info("request body in auth service {}", request);
             // Call user-service to validate email/password
             UserDto user = userClient.validateUser(request.email(), request.password());
 
@@ -65,6 +53,7 @@ public class AuthController {
 
             return ResponseEntity.ok(new AuthResponse(access, refresh));
         } catch (Exception ex) {
+            logger.error("Error during login: ", ex);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
     }
