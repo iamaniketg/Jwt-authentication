@@ -27,20 +27,25 @@ public class JwtService {
         this.accessTokenValidityMs = accessMinutes * 60 * 1000;
         this.refreshTokenValidityMs = refreshDays * 24 * 60 * 60 * 1000;
     }
-    public String generateAccessToken(String userName){
-        return buildToken(userName, accessTokenValidityMs);
+    public String generateAccessToken(String userName, String role) {
+        return buildToken(userName, role, accessTokenValidityMs);
     }
-    public String generateRefreshToken(String userName){
-        return buildToken(userName, refreshTokenValidityMs);
+
+    public String generateRefreshToken(String userName, String role) {
+        return buildToken(userName, role, refreshTokenValidityMs);
     }
-    public String buildToken(String subject, long validityMs){
+
+    private String buildToken(String subject, String role, long validityMs) {
         long now = System.currentTimeMillis();
-        return Jwts.builder().setSubject(subject)
+        return Jwts.builder()
+                .setSubject(subject)  // typically email/username
+                .claim("role", role)  // add role claim
                 .setIssuedAt(new Date(now))
-                .setExpiration(new Date(now+validityMs))
+                .setExpiration(new Date(now + validityMs))
                 .signWith(signingKey)
                 .compact();
     }
+
     public boolean isTokenValid(String token,String username){
         final String subject = extractUserName(token);
         return subject.equals(username) && !isTokenExpired(token);

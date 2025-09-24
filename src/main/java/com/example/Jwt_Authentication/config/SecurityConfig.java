@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->auth
-                        .requestMatchers("/auth/**",
+                        .requestMatchers("/**","/api/security/auth/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui/index.html",
                                 "/v3/api-docs/**",
@@ -36,7 +36,7 @@ public class SecurityConfig {
                                 "/h2-console/**",
                                 "/login.html",
                                 "/css/**",
-                                "/js/**")
+                                "/js/**","/actuator/prometheus")
                         .permitAll()
                         .anyRequest().authenticated());
         security.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

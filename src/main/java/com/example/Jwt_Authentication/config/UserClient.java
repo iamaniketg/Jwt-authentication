@@ -1,6 +1,6 @@
 package com.example.Jwt_Authentication.config;
 
-import com.example.Jwt_Authentication.model.dtos.AuthRequest;
+import com.example.Jwt_Authentication.model.dtos.requestDTOS.AuthRequest;
 import com.example.Jwt_Authentication.model.dtos.UserDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +13,7 @@ public class UserClient {
     private RestTemplate restTemplate;
 
     public UserDto validateUser(String email, String password) {
-        String url = "http://USER-SERVICE/api/users/validate";
+        String url = "http://user-service:8081/api/users/validate";
 
         AuthRequest req = new AuthRequest(email, password);
         return restTemplate.postForObject(url, req, UserDto.class);
