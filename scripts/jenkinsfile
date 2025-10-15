@@ -1,0 +1,75 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'Maven3'
+        jdk 'Java17'
+    }
+
+    environment {
+        GITHUB_USER  = credentials('GITHUB_USER')
+        GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+        DOCKER_IMAGE = 'your-repo/jwt-authentication'  // Replace with your Docker registry/repo
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        PREVIOUS_TAG = "${BUILD_NUMBER.toInteger() - 1}"
+        K8S_NAMESPACE = 'backend'  // Adjust as needed
+        K8S_DEPLOYMENT = 'security-service'  // Adjust to match your deployment name
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/<your-username>/Jwt-Authentication.git',
+                    credentialsId: 'github-credentials'
+            }
+        }
+
+        stage('Build Maven JAR') {
+            steps {
+                sh "mvn clean package -DskipTests"
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh "mvn test"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Update deployment with new image tag
+                    sh "kubectl set image deployment/${K8S_DEPLOYMENT} container-name=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${K8S_NAMESPACE}"
+                    sh "kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE} --timeout=5m"
+                }
+            }
+            post {
+                success {
+                    echo 'Deployment successful. Keeping the new tag.'
+                }
+                failure {
+                    echo 'Deployment failed. Rolling back to previous version.'
+                    sh "kubectl set image deployment/${K8S_DEPLOYMENT} container-name=${DOCKER_IMAGE}:${PREVIOUS_TAG} -n ${K8S_NAMESPACE}"
+                    sh "kubectl rollout status deployment/${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE} --timeout=5m"
+                }
+            }
+        }
+    }
+}
