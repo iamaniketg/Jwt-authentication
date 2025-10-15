@@ -16,7 +16,7 @@ spec:
       containers:
         - name: security
           image: security-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8085
           volumeMounts:
